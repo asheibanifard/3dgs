@@ -10,8 +10,8 @@ from PIL import Image
 scene = 'foot'
 method = 'XGaussian'
 
-save_path = f'/home/ycai51/XGaussian_sinc_nodirec_norm/point_cloud_visualization/{scene}_no_norm/'
-# save_path = f'point_cloud_visualization/{scene}/'
+# save_path = f'/home/ycai51/XGaussian_sinc_nodirec_norm/point_cloud_visualization/{scene}_no_norm/'
+save_path = f'point_cloud_visualization/{scene}/'
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -19,7 +19,7 @@ def sigmoid(x):
 os.makedirs(save_path, exist_ok=True)
 
 # path = 'output/foot/2024_01_10_23_04_44/point_cloud/iteration_30000/point_cloud.ply'
-path = 'output/foot/2024_01_31_10_00_42/point_cloud/iteration_30000/point_cloud.ply'
+path = 'X-Gaussian/output/head/2025_02_13_15_31_09/point_cloud/iteration_20000/point_cloud.ply'
 
 plydata = PlyData.read(path)
 
@@ -31,14 +31,11 @@ opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-# 绘制散点图
 points = xyz
 ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=1, alpha=min_max_norm(opacities), color='gray')
 
-# 取消三维网格坐标系
 ax.axis('off')
 
-# 上下翻转三维图像
 ax.invert_zaxis()
 
 elevation = 0
@@ -68,7 +65,6 @@ img = Image.open(image_files[0])
 
 gif_frames = [img.crop(box)]
 
-# 逐一添加图像帧
 for filename in tqdm(image_files[1:]):
     img = Image.open(filename)
     gif_frames.append(img.crop(box))

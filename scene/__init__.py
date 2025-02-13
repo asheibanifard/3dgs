@@ -68,8 +68,8 @@ class Scene:
             self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
             print("Loading Test Cameras")
             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
-            print("Loading Additional Cameras")
-            self.add_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.add_cameras, resolution_scale, args)
+            # print("Loading Additional Cameras")
+            # self.add_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.add_cameras, resolution_scale, args)
 
         if self.loaded_iter:
             self.gaussians.load_ply(os.path.join(self.model_path,
@@ -89,5 +89,5 @@ class Scene:
     def getTestCameras(self, scale=1.0):
         return self.test_cameras[scale]
     
-    def getAddCameras(self, scale=1.0):
-        return self.add_cameras[scale]
+    # def getAddCameras(self, scale=1.0):
+    #     return self.add_cameras[scale]

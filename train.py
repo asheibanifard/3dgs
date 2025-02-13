@@ -20,6 +20,7 @@ from pdb import set_trace as stx
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
     first_iter = 0
+    prev_loss = float("inf")
     exp_logger = prepare_output_and_logger(dataset)
     exp_logger.info("Training parameters: {}".format(vars(opt)))
 
@@ -69,6 +70,26 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         Ll1 = l1_loss(image, gt_image)
         loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
+        if loss.item() < prev_loss:
+            prev_loss = loss.item()  # Update previous loss
+            PSNR = psnr(image, gt_image).mean().item()
+            SSIM = ssim(image, gt_image).mean().item()
+            # Ensure model directory exists
+            os.makedirs('./model', exist_ok=True)
+            # Define checkpoint file path
+            checkpoint_path = os.path.join(f'{args.model_path}', f"chkpnt_{iteration}.pth")
+
+            # Save necessary information
+            checkpoint_data = {
+                'gaussians': gaussians.capture(),  # Assuming this returns tensor data
+                'iteration': iteration,
+                'loss': loss.item(),
+            }
+            chkpnt_dir = os.path.join(f'{args.model_path}', './checkpoint/checkpoints.pth')
+            print(f'Saving checkpoint to {chkpnt_dir}')
+            os.makedirs('checkpoint', exist_ok=True)
+            torch.save(checkpoint_data, chkpnt_dir)
+
         loss.backward()
 
         iter_end.record()
@@ -76,9 +97,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         with torch.no_grad():
             ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
-            if iteration % 10 == 0:
-                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}"})
-                progress_bar.update(10)
+            if iteration % 1 == 0:
+                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{3}f}", "psnr": f"{PSNR:.{3}f}", "ssim": f"{SSIM:.{3}f}"})
+                progress_bar.update(1)
             if iteration == opt.iterations:
                 progress_bar.close()
 

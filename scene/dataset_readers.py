@@ -17,11 +17,25 @@ from pdb import set_trace as stx
 
 
 class ConeGeometry(object):
+    '''
+    ConeGeometry class
+    DSD: Distance Source to Detector
+    DSO: Distance Source to Object
+    nDetector: Number of detector pixels
+    dDetector: Size of detector pixels
+    nVoxel: Number of voxels
+    dVoxel: Size of voxels
+    offOrigin: Offset of the origin
+    offDetector: Offset of the detector
+    accuracy: Accuracy of the simulation
+    mode: Mode of the simulation
+    filter: Filter of the simulation
+    '''
     def __init__(self, data):
 
         scale = 1.0
-
         self.DSD = data["DSD"]/scale 
+        
         self.DSO = data["DSO"]/scale
 
         self.nDetector = np.array(data["nDetector"])  
@@ -87,7 +101,7 @@ class SceneInfo(NamedTuple):
     point_cloud: BasicPointCloud    
     train_cameras: list             
     test_cameras: list              
-    add_cameras: list               
+    # add_cameras: list               
     nerf_normalization: dict       
     ply_path: str                   
 
@@ -337,11 +351,44 @@ def angle2pose(DSO, angle):
     T[:-1, -1] = trans  
     return T
 
+def C2W(theta, phi, radius):
+    """
+    Compute the camera-to-world transformation matrix from spherical angles.
+    
+    theta: Elevation angle in radians
+    phi: Azimuth angle in radians
+    radius: Distance from the origin
+    """
+    # Camera position in world space
+    x = radius * np.sin(theta) * np.cos(phi)
+    y = radius * np.sin(theta) * np.sin(phi)
+    z = radius * np.cos(theta)
+    pos = np.array([x, y, z])
 
+    # Forward vector (view direction)
+    f = pos / np.linalg.norm(pos)  # Normalize
+
+    # Right vector (perpendicular in x-y plane)
+    r = np.array([-np.sin(phi), np.cos(phi), 0])
+
+    # Up vector (cross product of right and forward vectors)
+    u = np.cross(r, f)
+
+    # Construct the rotation part of the transformation matrix
+    c2w = np.eye(4)
+    c2w[0, :3] = r
+    c2w[1, :3] = u
+    c2w[2, :3] = f
+
+    # Translation part
+    c2w[:3, 3] = pos
+
+    return c2w
 
 def Xray_readCamerasFromTransforms(path, type = 'train'):
 
     cam_infos = []
+    radius = 256*0.8
     with open(path, "rb") as handle:
         data = pickle.load(handle)
     geometry = ConeGeometry(data)
@@ -349,11 +396,11 @@ def Xray_readCamerasFromTransforms(path, type = 'train'):
     projs = data[type]["projections"]
     angles = data[type]["angles"]
     h, w = projs[0].shape
-    fovx = focal2fov(geometry.DSD, w)
+    fovx = focal2fov(radius, w)
     
 
     for idx, image_arr in enumerate(projs):
-        c2w = angle2pose(geometry.DSO,angles[idx])
+        c2w = C2W(angles[idx][0], angles[idx][1], radius)
         image_name = str(idx)
 
         w2c = np.linalg.inv(c2w)
@@ -364,7 +411,7 @@ def Xray_readCamerasFromTransforms(path, type = 'train'):
         image = image_arr
         angle = angles[idx]
 
-        fovy = focal2fov(geometry.DSD, h)
+        fovy = focal2fov(radius, h)
         FovY = fovy 
         FovX = fovx
 
@@ -374,38 +421,38 @@ def Xray_readCamerasFromTransforms(path, type = 'train'):
 
 
 
-def Xray_readCamerasFromTransforms_addtional(path, add_num = 50):
+# def Xray_readCamerasFromTransforms_addtional(path, add_num = 50):
 
-    cam_infos = []
-    with open(path, "rb") as handle:
-        data = pickle.load(handle)
-    geometry = ConeGeometry(data)
+#     cam_infos = []
+#     with open(path, "rb") as handle:
+#         data = pickle.load(handle)
+#     geometry = ConeGeometry(data)
 
-    type = 'train'
-    h, w = data[type]["projections"][0].shape
-    projs = np.zeros((add_num, h, w))
-    angles = np.random.uniform(0, np.pi, add_num)
-    fovx = focal2fov(geometry.DSD, w)
+#     type = 'train'
+#     h, w = data[type]["projections"][0].shape
+#     projs = np.zeros((add_num, h, w))
+#     angles = np.random.uniform(0, np.pi, add_num)
+#     fovx = focal2fov(geometry.DSD, w)
     
 
-    for idx, image_arr in enumerate(projs):
+#     for idx, image_arr in enumerate(projs):
 
-        c2w = angle2pose(geometry.DSO,angles[idx])
-        image_name = str(idx)
-        w2c = np.linalg.inv(c2w)
-        R = np.transpose(w2c[:3,:3]) 
-        T = w2c[:3, 3]
+#         c2w = angle2pose(geometry.DSO,angles[idx])
+#         image_name = str(idx)
+#         w2c = np.linalg.inv(c2w)
+#         R = np.transpose(w2c[:3,:3]) 
+#         T = w2c[:3, 3]
 
-        image = image_arr
-        angle = angles[idx]
+#         image = image_arr
+#         angle = angles[idx]
 
-        fovy = focal2fov(geometry.DSD, h)
-        FovY = fovy 
-        FovX = fovx
+#         fovy = focal2fov(geometry.DSD, h)
+#         FovY = fovy 
+#         FovX = fovx
 
-        cam_infos.append(CameraInfo_Xray(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image, image_name=image_name, width=image.shape[0], height=image.shape[1], angle=angle))
+#         cam_infos.append(CameraInfo_Xray(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image, image_name=image_name, width=image.shape[0], height=image.shape[1], angle=angle))
             
-    return cam_infos
+#     return cam_infos
 
 
 
@@ -414,8 +461,8 @@ def Xray_readNerfSyntheticInfo(path, eval, cube_pcd_init = True, interval = 2, a
     train_cam_infos = Xray_readCamerasFromTransforms(path, type = "train")
     print("Reading Test Transforms")
     test_cam_infos = Xray_readCamerasFromTransforms(path, type = "val")
-    print("creating additional camera poses")
-    add_cam_infos = Xray_readCamerasFromTransforms_addtional(path, add_num = add_num)
+    # print("creating additional camera poses")
+    # add_cam_infos = Xray_readCamerasFromTransforms_addtional(path, add_num = add_num)
     
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -460,7 +507,7 @@ def Xray_readNerfSyntheticInfo(path, eval, cube_pcd_init = True, interval = 2, a
     scene_info = SceneInfo(point_cloud=pcd,
                            train_cameras=train_cam_infos[:train_num],
                            test_cameras=test_cam_infos,
-                           add_cameras=add_cam_infos,
+                        #    add_cameras=add_cam_infos,
                            nerf_normalization=nerf_normalization,
                            ply_path=ply_path)
     return scene_info, pt_positions, image_3d

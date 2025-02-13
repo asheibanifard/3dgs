@@ -6,3 +6,9 @@ diff_rasterization/diff_rast.egg-info
 diff_rasterization/dist
 tensorboard_3d
 screenshots
+
+# dataset files
+data/processed
+data/raw
+data
+checkpoint

@@ -1,6 +1,6 @@
 scene: head
-source_path: data/head_50.pickle
-iterations: 20000
+source_path: data/head_50_new.pickle
+iterations: 50000
 position_lr_init: 0.00019
 position_lr_final: 0.0000019
 position_lr_delay_mult: 0.01
