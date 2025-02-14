@@ -12,3 +12,4 @@ data/processed
 data/raw
 data
 checkpoint
+best_model/

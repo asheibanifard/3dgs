@@ -1,10 +1,12 @@
-name: x_gaussian
+name: bio-hub-representation
 channels:
   - pytorch
   - conda-forge
   - defaults
 dependencies:
+  - python=3.7
   - cudatoolkit=11.6
+  - cudatoolkit-dev=11.6
   - plyfile=0.8.1
   - python=3.7.13
   - pip=22.3.1
@@ -14,7 +16,10 @@ dependencies:
   - tqdm
   - imageio
   - pyyaml
-  - pip:
-    - submodules/diff-gaussian-rasterization
-    - submodules/simple-knn
-    - opencv-python
+  - matplotlib
+  - numpy
+  - scikit-learn
+  - scikit-image
+  - tensorboard
+  - opencv
+  - h5py

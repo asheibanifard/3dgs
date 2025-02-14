@@ -75,9 +75,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             PSNR = psnr(image, gt_image).mean().item()
             SSIM = ssim(image, gt_image).mean().item()
             # Ensure model directory exists
-            os.makedirs('./model', exist_ok=True)
+            os.makedirs('best_model', exist_ok=True)
             # Define checkpoint file path
-            checkpoint_path = os.path.join(f'{args.model_path}', f"chkpnt_{iteration}.pth")
+            checkpoint_path = os.path.join(f'{args.model_path}', f"best_model/chkpnt_{iteration}.pth")
 
             # Save necessary information
             checkpoint_data = {
@@ -85,11 +85,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 'iteration': iteration,
                 'loss': loss.item(),
             }
-            chkpnt_dir = os.path.join(f'{args.model_path}', './checkpoint/checkpoints.pth')
-            print(f'Saving checkpoint to {chkpnt_dir}')
+            chkpnt_dir = checkpoint_path
             os.makedirs('checkpoint', exist_ok=True)
             torch.save(checkpoint_data, chkpnt_dir)
-
+        if iteration % 2000 == 0:
+            os.makedirs('checkpoint', exist_ok=True)
+            checkpoint_data = {
+                'gaussians': gaussians.capture(),  # Assuming this returns tensor data
+                'iteration': iteration,
+                'loss': loss.item(),
+            }
+            chkpnt_dir = os.path.join(f'{args.model_path}', f'checkpoint/chkp_{iteration}.pth')
+            torch.save(checkpoint_data, chkpnt_dir)
         loss.backward()
 
         iter_end.record()
@@ -125,7 +132,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gaussians.optimizer.zero_grad(set_to_none = True)
 
             if (iteration in checkpoint_iterations):
-                print("\n[ITER {}] Saving Checkpoint".format(iteration))
+                # print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
 
 
@@ -136,7 +143,6 @@ def prepare_output_and_logger(args):
         date_time = time2file_name(date_time)
         args.model_path = os.path.join("./output/", args.scene, date_time)
         
-    print("Output folder: {}".format(args.model_path))
     os.makedirs(args.model_path, exist_ok = True)
     with open(os.path.join(args.model_path, "cfg_args"), 'w') as cfg_log_f:
         cfg_log_f.write(str(Namespace(**vars(args))))
@@ -179,12 +185,12 @@ def training_report(exp_logger, iteration, Ll1, loss, l1_loss, elapsed, testing_
                 ssim_test /= len(config['cameras'])
 
                 end = time.time()
-                exp_logger.info(f"Testing Speed: {len(config['cameras'])/(end-start)} fps")
-                exp_logger.info(f"Testing Time: {end-start} s")
-                exp_logger.info("\n[ITER {}] Evaluating {}: SSIM = {}, PSNR = {}".format(iteration, config['name'], ssim_test, psnr_test))
+        #         exp_logger.info(f"Testing Speed: {len(config['cameras'])/(end-start)} fps")
+        #         exp_logger.info(f"Testing Time: {end-start} s")
+        #         exp_logger.info("\n[ITER {}] Evaluating {}: SSIM = {}, PSNR = {}".format(iteration, config['name'], ssim_test, psnr_test))
 
-        if exp_logger:
-            exp_logger.info(f'Iter:{iteration}, total_points:{scene.gaussians.get_xyz.shape[0]}')
+        # if exp_logger:
+        #     exp_logger.info(f'Iter:{iteration}, total_points:{scene.gaussians.get_xyz.shape[0]}')
         torch.cuda.empty_cache()
 
 

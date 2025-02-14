@@ -7,7 +7,7 @@ from utils.image_utils import min_max_norm
 from tqdm import tqdm
 from PIL import Image
 
-scene = 'foot'
+scene = 'head'
 method = 'XGaussian'
 
 # save_path = f'/home/ycai51/XGaussian_sinc_nodirec_norm/point_cloud_visualization/{scene}_no_norm/'
@@ -19,7 +19,7 @@ def sigmoid(x):
 os.makedirs(save_path, exist_ok=True)
 
 # path = 'output/foot/2024_01_10_23_04_44/point_cloud/iteration_30000/point_cloud.ply'
-path = 'X-Gaussian/output/head/2025_02_13_15_31_09/point_cloud/iteration_20000/point_cloud.ply'
+path = 'output/head/2025_02_13_17_16_00/point_cloud/iteration_30000/point_cloud.ply'
 
 plydata = PlyData.read(path)
 
